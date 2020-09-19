@@ -442,6 +442,13 @@ namespace DW_Gameplay
                 switch (dataState.motionDataGroups[currentMotionDataGroupIndex].animationData[index].dataType)
                 {
                     case AnimationDataType.BlendTree:
+                        currentPlayedClipsInfo.Add(new CurrentPlayedClipInfo(
+                            index,
+                            currentMotionDataGroupIndex,
+                            dataState.motionDataGroups[currentMotionDataGroupIndex].animationData[index].GetLocalTime((float)stateMixer.GetInput(i).GetInput(0).GetTime()),
+                            !dataState.motionDataGroups[currentMotionDataGroupIndex].animationData[index].findInYourself
+                            ));
+                        break;
                     case AnimationDataType.SingleAnimation:
                         currentPlayedClipsInfo.Add(new CurrentPlayedClipInfo(
                             index,
@@ -498,6 +505,89 @@ namespace DW_Gameplay
                 case MotionMatchingStateType.SingleAnimation:
                     this.dataState.motionDataGroups[currentMotionDataGroupIndex].animationData[currentDataIndex].GetPoseInTime(ref logicLayer.currentPose, currentClipLocalTime);
                     return;
+            }
+
+            throw new System.Exception("Wrong type of AnimationData!");
+        }
+
+        protected List<CurrentPlayedClipInfo> GetCurrentClipsInfo_EditorOnly()
+        {
+            List<CurrentPlayedClipInfo> clipInfos = new List<CurrentPlayedClipInfo>();
+            int seqCounter = 0;
+            for (int i = 0; i < currentPlayedClipsIndexes.Count; i++)
+            {
+                int index = currentPlayedClipsIndexes[i];
+
+                switch (dataState.motionDataGroups[currentMotionDataGroupIndex].animationData[index].dataType)
+                {
+                    case AnimationDataType.BlendTree:
+                        clipInfos.Add(new CurrentPlayedClipInfo(
+                            index,
+                            currentMotionDataGroupIndex,
+                            dataState.motionDataGroups[currentMotionDataGroupIndex].animationData[index].GetLocalTime((float)stateMixer.GetInput(i).GetInput(0).GetTime()),
+                            !dataState.motionDataGroups[currentMotionDataGroupIndex].animationData[index].findInYourself
+                            ));
+                        break;
+                    case AnimationDataType.SingleAnimation:
+                        clipInfos.Add(new CurrentPlayedClipInfo(
+                            index,
+                            currentMotionDataGroupIndex,
+                            dataState.motionDataGroups[currentMotionDataGroupIndex].animationData[index].GetLocalTime((float)stateMixer.GetInput(i).GetTime()),
+                            !dataState.motionDataGroups[currentMotionDataGroupIndex].animationData[index].findInYourself
+                            ));
+                        break;
+                    case AnimationDataType.AnimationSequence:
+                        clipInfos.Add(new CurrentPlayedClipInfo(
+                            index,
+                            currentMotionDataGroupIndex,
+                            animationsSequences[seqCounter].GetLocalTime(),
+                            !dataState.motionDataGroups[currentMotionDataGroupIndex].animationData[index].findInYourself
+                            ));
+                        seqCounter++;
+                        break;
+                }
+            }
+            return clipInfos;
+        }
+
+        public PoseData GetAndCalculateCurrentPose_EditorOnly()
+        {
+            switch (this.dataState.GetStateType())
+            {
+                case MotionMatchingStateType.MotionMatching:
+                    List<CurrentPlayedClipInfo> clipInfos = GetCurrentClipsInfo_EditorOnly();
+                    float weight;
+
+                    for (int i = 0; i < logicLayer.currentPose.Count; i++)
+                    {
+                        logicLayer.currentPose.SetBone(float3.zero, float3.zero, i);
+                    }
+
+                    for (int i = 0; i < clipInfos.Count; i++)
+                    {
+                        this.dataState.motionDataGroups[clipInfos[i].groupIndex].animationData[clipInfos[i].clipIndex].GetPoseInTime(
+                            ref logicLayer.bufforPose,
+                            clipInfos[i].localTime
+                            );
+                        weight = stateMixer.GetInputWeight(i);
+
+                        for (int j = 0; j < logicLayer.currentPose.Count; j++)
+                        {
+                            logicLayer.currentPose.SetBone(
+                                logicLayer.currentPose.GetBoneData(j).localPosition + weight * logicLayer.bufforPose.GetBoneData(j).localPosition,
+                                logicLayer.currentPose.GetBoneData(j).velocity + weight * logicLayer.bufforPose.GetBoneData(j).velocity,
+                                j
+                                );
+
+                        }
+                    }
+                    return logicLayer.currentPose;
+                case MotionMatchingStateType.ContactAnimationState:
+                    GetCurrentMotionGroup().animationData[currentDataIndex].GetPoseInTime(ref logicLayer.currentPose, currentClipLocalTime);
+                    return logicLayer.currentPose;
+                case MotionMatchingStateType.SingleAnimation:
+                    GetCurrentMotionGroup().animationData[currentDataIndex].GetPoseInTime(ref logicLayer.currentPose, currentClipLocalTime);
+                    return logicLayer.currentPose;
             }
 
             throw new System.Exception("Wrong type of AnimationData!");
@@ -670,11 +760,10 @@ namespace DW_Gameplay
             switch (this.dataState.motionDataGroups[currentMotionDataGroupIndex].animationData[currentDataIndex].dataType)
             {
                 case AnimationDataType.SingleAnimation:
-                    currentClipLocalTime = dataState.motionDataGroups[currentMotionDataGroupIndex].animationData[currentDataIndex].GetLocalTime(currentClipGlobalTime);
+                    currentClipLocalTime = GetCurrentMotionGroup().animationData[currentDataIndex].GetLocalTime(currentClipGlobalTime);
                     break;
                 case AnimationDataType.BlendTree:
-
-                    currentClipLocalTime = dataState.motionDataGroups[currentMotionDataGroupIndex].animationData[currentDataIndex].GetLocalTime(currentClipGlobalTime);
+                    currentClipLocalTime = GetCurrentMotionGroup().animationData[currentDataIndex].GetLocalTime(currentClipGlobalTime);
                     break;
                 case AnimationDataType.AnimationSequence:
                     currentClipLocalTime = animationsSequences[animationsSequences.Count - 1].GetLocalTime();
