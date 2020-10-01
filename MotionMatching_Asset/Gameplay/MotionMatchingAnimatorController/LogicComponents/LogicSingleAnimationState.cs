@@ -170,7 +170,7 @@ namespace DW_Gameplay
 
         private void RandomAnimationUpdate()
         {
-            if (currentClipLocalTime >= (GetCurrenMMData().animationLength - dataState.saFeatures.blendTime))
+            if (currentClipLocalTime >= (GetCurrentMMData().animationLength - dataState.saFeatures.blendTime))
             {
                 int nextClipIndex = Mathf.FloorToInt(UnityEngine.Random.Range(0, dataState.motionDataGroups[currentMotionDataGroupIndex].animationData.Count - 0.5f));
 

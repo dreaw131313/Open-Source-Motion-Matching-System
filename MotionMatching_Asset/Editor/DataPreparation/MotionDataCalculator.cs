@@ -22,7 +22,6 @@ namespace DW_Editor
             bool findInYourself
             )
         {
-
             if (!graph.IsValid())
             {
                 graph.Initialize(go);
@@ -57,6 +56,7 @@ namespace DW_Editor
             graph.AddClipPlayable(clip);
             graph.SetMixerInputWeight(0, 1f);
             graph.SetMixerInputTimeInPlace(0, 0f);
+
             graph.Evaluate(frameTime);
 
 
@@ -86,8 +86,8 @@ namespace DW_Editor
                 {
                     float2 boneWeight = bonesWeights[i];
                     float3 velocity = BoneData.CalculateVelocity(previuData[i].position, nextData[i].position, frameTime);
-                    float3 localPosition = nextData[i].position;
-                    quaternion orientation = nextData[i].rotation;
+                    float3 localPosition = previuData[i].position;
+                    quaternion orientation = previuData[i].rotation;
                     boneBuffer = new BoneData(localPosition, velocity);
                     poseBuffor.SetBone(boneBuffer, i);
                 }
@@ -275,8 +275,8 @@ namespace DW_Editor
                 {
                     float2 boneWeight = bonesWeights[i];
                     float3 velocity = BoneData.CalculateVelocity(previewBoneData[i].position, nextBoneData[i].position, frameTime);
-                    float3 localPosition = nextBoneData[i].position;
-                    quaternion orientation = nextBoneData[i].rotation;
+                    float3 localPosition = previewBoneData[i].position;
+                    quaternion orientation = previewBoneData[i].rotation;
                     boneBuffer = new BoneData(localPosition, velocity);
                     poseBuffor.SetBone(boneBuffer, i);
                 }
@@ -454,8 +454,8 @@ namespace DW_Editor
                 {
                     float2 boneWeight = bonesWeights[i];
                     float3 velocity = BoneData.CalculateVelocity(previuData[i].position, nextData[i].position, frameTime);
-                    float3 localPosition = nextData[i].position;
-                    quaternion orientation = nextData[i].rotation;
+                    float3 localPosition = previuData[i].position;
+                    quaternion orientation = previuData[i].rotation;
                     boneBuffer = new BoneData(localPosition, velocity);
                     poseBuffor.SetBone(boneBuffer, i);
                 }
@@ -709,8 +709,8 @@ namespace DW_Editor
                     Vector3 forw = frameMatrix.inverse.MultiplyVector(cpForwards[j]);
                     FrameContact cp = new FrameContact(
                         pos,
-                        norDir,
-                        forw
+                        norDir
+                        //forw
                         );
                     currentFrame.contactPoints[j] = cp;
                 }
@@ -723,20 +723,36 @@ namespace DW_Editor
 
             if (data.contactPoints.Count >= 2)
             {
-                Vector3 firstPoint = data.GetContactPoint(0, data.contactPoints[0].startTime).position;
-                Vector3 secondPoint = data.GetContactPoint(1, data.contactPoints[0].startTime).position;
+                for (int i = 0; i < contactPoints.Length - 1; i++)
+                {
+                    Vector3 firstPoint = data.GetContactPointInTime(i, data.contactPoints[i].startTime).position;
+                    Vector3 secondPoint = data.GetContactPointInTime(i+1, data.contactPoints[i].startTime).position;
+
+                    Vector3 dir = secondPoint - firstPoint;
+                    dir.y = 0;
+
+                    MotionMatchingContact c = data.contactPoints[i];
+                    c.rotationFromForwardToNextContactDir = Quaternion.FromToRotation(dir, Vector3.forward);
+                    data.contactPoints[i] = c;
+                }
+            }
+
+            if (data.contactPoints.Count >= 2)
+            {
+                Vector3 firstPoint = data.GetContactPointInTime(0, data.contactPoints[0].startTime).position;
+                Vector3 secondPoint = data.GetContactPointInTime(1, data.contactPoints[0].startTime).position;
 
                 Vector3 dir = secondPoint - firstPoint;
                 dir.y = 0;
-                data.fromFirstToSecondContactRot = Quaternion.FromToRotation(dir, Vector3.forward);
+                data.fromFirstToSecondContactRot = Quaternion.FromToRotation(
+                    Vector3.ProjectOnPlane(dir, Vector3.up), 
+                    Vector3.forward
+                    );
             }
             else
             {
                 data.fromFirstToSecondContactRot = Quaternion.identity;
             }
-
-
-
 
             playableGraph.ClearMainMixerInput();
             playableGraph.Destroy();
@@ -839,8 +855,8 @@ namespace DW_Editor
                         Vector3 forw = frameMatrix.inverse.MultiplyVector(cpForwards[impactIndex]);
                         FrameContact cp = new FrameContact(
                             pos,
-                            norDir,
-                            forw
+                            norDir
+                            //forw
                             );
                         currentFrame.contactPoints[0] = cp;
                         break;

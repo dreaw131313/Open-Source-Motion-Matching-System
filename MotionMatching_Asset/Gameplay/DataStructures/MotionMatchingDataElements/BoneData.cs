@@ -56,21 +56,21 @@ namespace DW_Gameplay
         public float CalculateCost(BoneData toBone, PoseCostType type)
         {
             float cost = 0;
-            switch (type)
-            {
-                case PoseCostType.Position:
+            //switch (type)
+            //{
+            //    case PoseCostType.Position:
+            //        cost += CalculatePositionCost(toBone);
+            //        break;
+            //    case PoseCostType.Velocity:
+            //        cost += CalculateVelocityCost(toBone);
+            //        break;
+            //    case PoseCostType.PositionVelocity:
                     cost += CalculatePositionCost(toBone);
-                    break;
-                case PoseCostType.Velocity:
                     cost += CalculateVelocityCost(toBone);
-                    break;
-                case PoseCostType.PositionVelocity:
-                    cost += CalculatePositionCost(toBone);
-                    cost += CalculateVelocityCost(toBone);
-                    break;
-                case PoseCostType.None:
-                    break;
-            }
+                    //break;
+            //    case PoseCostType.None:
+            //        break;
+            //}
             return cost;
         }
 

@@ -12,7 +12,6 @@ namespace DW_Gameplay
     {
         public MotionMatchingState dataState;
 
-
         protected List<int> currentPlayedClipsIndexes = new List<int>();
         protected List<float> blendingSpeeds = new List<float>();
         protected List<float> currentWeights;
@@ -21,7 +20,7 @@ namespace DW_Gameplay
         protected MotionMatching motionMatching;
         protected MotionMatchingPlayableGraph playableGraph;
         protected LogicMotionMatchingLayer logicLayer;
-        protected Transform gameObject;
+        protected Transform Transform;
 
         protected int currentDataIndex;
         protected float currentClipLocalTime;
@@ -45,7 +44,7 @@ namespace DW_Gameplay
 
         protected int currentMotionDataGroupIndex = 0;
 
-        public float speedMultiplayer = 1f;
+        public float speedMultiplier = 1f;
 
         public float CurrentClipLocalTime { get => currentClipLocalTime; private set => currentClipLocalTime = value; }
         public float CurrentClipGlobalTime { get => currentClipGlobalTime; private set => currentClipGlobalTime = value; }
@@ -63,10 +62,10 @@ namespace DW_Gameplay
             this.playableGraph = playableGraph;
             this.logicLayer = logicLayer;
             this.motionMatching = component;
-            this.gameObject = gameObject;
+            this.Transform = gameObject;
 
             isBlockedToEnter = false;
-            speedMultiplayer = this.dataState.speedMultiplayer;
+            speedMultiplier = this.dataState.speedMultiplier;
 
             currentPlayedClipsIndexes = new List<int>();
             blendingSpeeds = new List<float>();
@@ -219,7 +218,7 @@ namespace DW_Gameplay
 
             lastFrameAnimationTime = this.currentClipLocalTime;
             CalculateCurrentEventMarker();
-            this.stateMixer.SetSpeed(this.dataState.speedMultiplayer);
+            this.stateMixer.SetSpeed(this.dataState.speedMultiplier);
         }
 
         public bool WhichTransitionShouldStart()
@@ -297,9 +296,9 @@ namespace DW_Gameplay
             lastFrameAnimationTime = this.currentClipLocalTime;
             CalculateCurrentEventMarker();
 
-            this.stateMixer.SetSpeed(speedMultiplayer);
+            this.stateMixer.SetSpeed(speedMultiplier);
 #if UNITY_EDITOR
-            speedMultiplayer = this.dataState.speedMultiplayer;
+            speedMultiplier = this.dataState.speedMultiplier;
 #endif
         }
 
@@ -345,7 +344,8 @@ namespace DW_Gameplay
             WhichTransitionShouldStart();
 
 #if UNITY_EDITOR
-            this.stateMixer.SetSpeed(this.dataState.speedMultiplayer);
+            speedMultiplier = this.dataState.speedMultiplier;
+            this.stateMixer.SetSpeed(speedMultiplier);
 #endif
         }
 
@@ -706,6 +706,15 @@ namespace DW_Gameplay
             }
         }
 
+        public AnimationClip GetCurrentAnimationClip()
+        {
+            if(GetCurrentMMData().dataType!= AnimationDataType.SingleAnimation)
+            {
+                return null;
+            }
+            return GetCurrentMMData().clips[0];
+        }
+
         #endregion
 
         #region SETTERS
@@ -747,12 +756,18 @@ namespace DW_Gameplay
             {
                 logicLayer.stateInputTrajectoryLocalSpace.SetPoint(goal.GetPoint(i), i);
             }
-            logicLayer.stateInputTrajectoryLocalSpace.TransformToLocalSpace(this.gameObject);
+            logicLayer.stateInputTrajectoryLocalSpace.TransformToLocalSpace(this.Transform);
         }
 
         public void SetPlayable(AnimationMixerPlayable mixer)
         {
             this.stateMixer = mixer;
+        }
+
+        public void SetAnimationSpeed(float speed)
+        {
+            speedMultiplier = speed;
+            this.stateMixer.SetSpeed(speedMultiplier);
         }
 
         protected void SetCurrentClipLocalTime()
@@ -783,7 +798,7 @@ namespace DW_Gameplay
                 stateBehaviors = new List<MotionMatchingStateBehavior>();
             }
 
-            stateEvent.SetBasic(this, motionMatching, this.gameObject);
+            stateEvent.SetBasic(this, motionMatching, this.Transform);
             stateBehaviors.Add(stateEvent);
         }
 
@@ -797,7 +812,7 @@ namespace DW_Gameplay
 
             for (int i = 0; i < newStateEvents.Length; i++)
             {
-                newStateEvents[i].SetBasic(this, motionMatching, this.gameObject);
+                newStateEvents[i].SetBasic(this, motionMatching, this.Transform);
             }
             this.stateBehaviors.AddRange(newStateEvents);
         }
@@ -811,7 +826,7 @@ namespace DW_Gameplay
 
             for (int i = 0; i < newStateEvents.Count; i++)
             {
-                newStateEvents[i].SetBasic(this, motionMatching, gameObject);
+                newStateEvents[i].SetBasic(this, motionMatching, Transform);
             }
             this.stateBehaviors.AddRange(stateBehaviors);
         }
@@ -878,7 +893,7 @@ namespace DW_Gameplay
             JobHandle.CompleteAll(jobsHandle);
         }
 
-        public MotionMatchingData GetCurrenMMData()
+        public MotionMatchingData GetCurrentMMData()
         {
             return dataState.motionDataGroups[currentMotionDataGroupIndex].animationData[currentDataIndex];
         }

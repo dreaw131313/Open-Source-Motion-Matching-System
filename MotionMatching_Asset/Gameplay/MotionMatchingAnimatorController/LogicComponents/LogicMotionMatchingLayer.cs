@@ -38,7 +38,7 @@ namespace DW_Gameplay
         public NativeArray<TrajectoryPoint> nativeTrajectory;
         public NativeArray<BoneData> nativePose;
 
-        public List<FrameContact> contactPoints;
+        public List<SwitchStateContact> contactPoints;
         public List<MotionMatchingContact> adaptedContactPoints;
 
         // Switch State features
@@ -215,6 +215,11 @@ namespace DW_Gameplay
             return logicStates[currentStateIndex].dataState.trajectoryCorrection;
         }
 
+        public MotionMatchingStateType GetCurrentStateType()
+        {
+            return GetCurrentState().GetStateType();
+        }
+
         #endregion
 
         #region Setters
@@ -251,11 +256,15 @@ namespace DW_Gameplay
             }
         }
 
-        public void SetContactPoints(FrameContact[] contactPoints)
+        public void SetContactPoints(SwitchStateContact[] contactPoints)
         {
             if (this.contactPoints == null)
             {
-                this.contactPoints = new List<FrameContact>();
+                this.contactPoints = new List<SwitchStateContact>();
+            }
+            else
+            {
+                this.contactPoints.Clear();
             }
 
             for (int i = 0; i < contactPoints.Length; i++)
@@ -356,7 +365,7 @@ namespace DW_Gameplay
         public bool SwitchToContactState(
             PoseData currentPose,
             Trajectory goal,
-            List<FrameContact> contactPoints,
+            List<SwitchStateContact> contactPoints,
             int nextStateIndex,
             float blendTime,
             string startSectionName = null

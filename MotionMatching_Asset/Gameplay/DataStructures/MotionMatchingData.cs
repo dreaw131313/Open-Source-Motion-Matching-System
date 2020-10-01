@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEditor;
-using UnityEditorInternal;
 using UnityEngine;
 
 namespace DW_Gameplay
@@ -819,7 +818,7 @@ namespace DW_Gameplay
             }
         }
 
-        public FrameContact GetContactPoint(int index, float currentLocalTime, float animSpeedMulti = 1f)
+        public FrameContact GetContactPointInTime(int index, float currentLocalTime, float animSpeedMulti = 1f)
         {
             int backFrame = Mathf.FloorToInt(currentLocalTime / frameTime);
             int nextFrame = backFrame == (frames.Count - 1) ? frames.Count - 1 : backFrame + 1;
@@ -860,6 +859,7 @@ namespace DW_Gameplay
 
         #region Static Functions
 
+#if UNITY_EDITOR
         public static void CopyDataSectionTimeIntervals(MotionMatchingData from, MotionMatchingData to, int sectionIndex)
         {
 
@@ -882,7 +882,7 @@ namespace DW_Gameplay
 
             EditorUtility.SetDirty(to);
         }
-
-        #endregion
+#endif
+#endregion
     }
 }

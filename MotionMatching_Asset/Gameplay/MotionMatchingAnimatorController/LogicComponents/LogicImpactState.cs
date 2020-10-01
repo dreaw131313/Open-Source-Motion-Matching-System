@@ -53,8 +53,13 @@ namespace DW_Gameplay
         protected override void Enter(PoseData currentPose, Trajectory previouStateGoal, List<float2> whereCanFindingBestPose)
         {
             NativeArray<float2> findingIntervals = new NativeArray<float2>(whereCanFindingBestPose.ToArray(), Allocator.TempJob);
-            NativeArray<FrameContact> contactPointsNative = new NativeArray<FrameContact>(logicLayer.contactPoints.ToArray(), Allocator.TempJob);
+            NativeArray<FrameContact> contactPointsNative = new NativeArray<FrameContact>(logicLayer.contactPoints.Count, Allocator.TempJob);
 
+            //making native contactsl
+            for (int i = 0; i < logicLayer.contactPoints.Count; i++)
+            {
+                contactPointsNative[i] = logicLayer.contactPoints[i].frameContact;
+            }
             // Geting native pose
             for (int i = 0; i < currentPose.Count; i++)
             {
@@ -145,7 +150,13 @@ namespace DW_Gameplay
         {
             base.ForceAnimationFindngInternal();
             NativeArray<float2> findingIntervals = new NativeArray<float2>(0, Allocator.TempJob);
-            NativeArray<FrameContact> contactPointsNative = new NativeArray<FrameContact>(logicLayer.contactPoints.ToArray(), Allocator.TempJob);
+            NativeArray<FrameContact> contactPointsNative = new NativeArray<FrameContact>(logicLayer.contactPoints.Count, Allocator.TempJob);
+
+            //making native contactsl
+            for (int i = 0; i < logicLayer.contactPoints.Count; i++)
+            {
+                contactPointsNative[i] = logicLayer.contactPoints[i].frameContact;
+            }
 
             ImpactAnimationFinding(
                 logicLayer.nativePose,

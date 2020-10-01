@@ -30,6 +30,11 @@ namespace DW_Editor
         MotionMatchingData dataToCopyOptions;
         GameObject gameObject;
 
+        bool _bDrawTrajectory = true;
+        bool _bDrawPose = true;
+
+
+
 
         [MenuItem("MM Data Editor", menuItem = "MotionMatching/MM Data Editor")]
         private static void ShowWindow()
@@ -132,7 +137,7 @@ namespace DW_Editor
 
         private void OnSceneGUI(SceneView obj)
         {
-            DrawSceneGUI();
+            DrawSceneGUI(obj);
         }
 
         private static void OnUndoRedoPerformed()
@@ -230,6 +235,9 @@ namespace DW_Editor
         private void DrawLeftMenu(Event e)
         {
             DrawNeededAssets();
+            GUILayout.Space(5);
+            DrawCommonOptions();
+            GUILayout.Space(5);
             DrawPosibleOptions();
             GUILayout.Space(10);
             leftMenuScroll = EditorGUILayout.BeginScrollView(leftMenuScroll);
@@ -275,6 +283,16 @@ namespace DW_Editor
             {
                 contactPointsRL = new ReorderableList(editedData.contactPoints, typeof(MotionMatchingContact), true, false, true, true);
             }
+        }
+
+        private void DrawCommonOptions()
+        {
+            GUILayout.BeginHorizontal();
+            {
+                _bDrawPose = GUILayout.Toggle(_bDrawPose, "Draw Pose", new GUIStyle("Button"));
+                _bDrawTrajectory = GUILayout.Toggle(_bDrawTrajectory, "Draw Trajectory", new GUIStyle("Button"));
+            }
+            GUILayout.EndHorizontal();
         }
 
         private void DrawPosibleOptions()
@@ -363,46 +381,14 @@ namespace DW_Editor
 
         private void ContactPointsDrawingOptionsInSceneView()
         {
-            GUILayout.BeginVertical();
-
-            GUILayout.Label("Contacts Draw options:");
+            GUILayout.Label("Calculated Contacts Draw options:");
 
             GUILayout.BeginHorizontal();
-            GUILayout.Space(contactOptionsMargin);
-
-            GUILayout.BeginVertical();
-            GUILayout.Label("Draw Position");
-            switch (editedData.contactsType)
-            {
-                case ContactStateType.NormalContacts:
-                    GUILayout.Label("Draw Contact normal");
-                    break;
-                case ContactStateType.Impacts:
-                    GUILayout.Label("Draw Impact direction");
-                    break;
-            }
-            GUILayout.Label("Draw position manipulator");
-            switch (editedData.contactsType)
-            {
-                case ContactStateType.NormalContacts:
-
-                    GUILayout.Label("Draw Contact normal manipulator");
-                    break;
-                case ContactStateType.Impacts:
-                    GUILayout.Label("Draw Impact direction manipulator");
-                    break;
-            }
-            GUILayout.EndVertical();
-
-            GUILayout.BeginVertical();
-            drawContactsPositions = EditorGUILayout.Toggle(drawContactsPositions);
-            drawContactsRSN = EditorGUILayout.Toggle(drawContactsRSN);
-            drawPositionManipulator = EditorGUILayout.Toggle(drawPositionManipulator);
-            drawRotationManipuator = EditorGUILayout.Toggle(drawRotationManipuator);
-            GUILayout.EndVertical();
-
+            drawContactsPositions = GUILayout.Toggle(drawContactsPositions, "Positions", new GUIStyle("Button"));
+            drawContactsRSN = GUILayout.Toggle(drawContactsRSN, "Normals", new GUIStyle("Button"));
             GUILayout.EndHorizontal();
-            GUILayout.EndVertical();
+
+
         }
 
         private void ContactsButtonOptions()
@@ -597,7 +583,7 @@ namespace DW_Editor
 
         private void DrawAboveScrollOptions()
         {
-            if(editedData == null)
+            if (editedData == null)
             {
                 return;
             }
@@ -1107,12 +1093,54 @@ namespace DW_Editor
 
         #region Scene GUI Drawing
 
-        private void DrawSceneGUI()
+        private void DrawSceneGUI(SceneView sceneView)
         {
-            if (selectedOption == 1 && gameObject != null)
+            if (gameObject != null && editedData != null)
             {
-                DrawSelectedContactPoint();
-                DrawCalculatedContactPoints();
+                if (selectedOption == 1)
+                {
+                    DrawSelectedContactPoint();
+                    DrawCalculatedContactPoints();
+                }
+
+                if (_bDrawTrajectory)
+                {
+                    Handles.color = Color.cyan;
+                    Handles.DrawWireCube(gameObject.transform.position, Vector3.one * 0.1f);
+                    Trajectory t = new Trajectory(editedData.trajectoryPointsTimes.Count);
+                    editedData.GetTrajectoryInTime(ref t, currentAnimaionTime);
+                    Handles.color = Color.green;
+                    t.TransformToWorldSpace(gameObject.transform);
+                    MM_Gizmos.DrawTrajectory_Handles(
+                        editedData.trajectoryPointsTimes.ToArray(),
+                        gameObject.transform.position,
+                        gameObject.transform.forward,
+                        t,
+                        0.04f,
+                        0.2f
+                        );
+                }
+
+                if (_bDrawPose)
+                {
+                    PoseData p = new PoseData(editedData[0].pose.Count);
+                    editedData.GetPoseInTime(ref p, currentAnimaionTime);
+                    p.TransformToWorldSpace(gameObject.transform);
+                    MM_Gizmos.DrawPose(p, Color.blue, Color.yellow);
+                }
+
+                if (selectedOption == 1)
+                {
+                    float length = 200f;
+                    float height = 25f;
+                    Rect r = new Rect(
+                        sceneView.position.width / 2f - length / 2f,
+                        30f,
+                        length,
+                        height
+                        );
+                    DrawContactGizmosSelectRect(r);
+                }
             }
         }
 
@@ -1233,6 +1261,22 @@ namespace DW_Editor
                 MM_Gizmos.DrawArrowHandles(cpPos, cpRSN.normalized, arrowLength, arrowArmLength);
             }
 
+        }
+
+        private void DrawContactGizmosSelectRect(Rect rect)
+        {
+            Handles.BeginGUI();
+            {
+                GUILayout.BeginArea(rect);
+                {
+                    GUILayout.BeginHorizontal();
+                    drawPositionManipulator = GUILayout.Toggle(drawPositionManipulator, "Position", new GUIStyle("Button"));
+                    drawRotationManipuator = GUILayout.Toggle(drawRotationManipuator, "Normal", new GUIStyle("Button"));
+                    GUILayout.EndHorizontal();
+                }
+                GUILayout.EndArea();
+            }
+            Handles.EndGUI();
         }
         #endregion
     }

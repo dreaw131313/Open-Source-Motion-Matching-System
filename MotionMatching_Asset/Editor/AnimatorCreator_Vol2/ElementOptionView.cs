@@ -187,7 +187,7 @@ namespace DW_Editor
             GUILayout.BeginHorizontal();
             GUILayout.Space(10);
             EditorGUILayout.LabelField("Speed multiplayer", GUILayout.Width(descriptionWidth));
-            selectedState.speedMultiplayer = EditorGUILayout.FloatField(selectedState.speedMultiplayer);
+            selectedState.speedMultiplier = EditorGUILayout.FloatField(selectedState.speedMultiplier);
             GUILayout.EndHorizontal();
 
             string currentName = selectedState.GetName();
@@ -847,35 +847,37 @@ namespace DW_Editor
                         );
 
             ContactStateFeatures features = selectedState.csFeatures;
-            GUILayout.BeginHorizontal();
-            GUILayout.Space(10);
-            if (Application.isPlaying)
-            {
-                EditorGUILayout.EnumPopup("Contact state type", features.contactStateType);
-            }
-            else
-            {
-                features.contactStateType = (ContactStateType)EditorGUILayout.EnumPopup("Contact state type", features.contactStateType);
-                switch (features.contactStateType)
-                {
-                    case ContactStateType.NormalContacts:
-                        selectedLayer.SetNodeTitle(selectedState.nodeID, "Contact state:");
-                        break;
-                    case ContactStateType.Impacts:
-                        selectedLayer.SetNodeTitle(selectedState.nodeID, "Impact state:");
-                        break;
-                }
-            }
-            GUILayout.EndHorizontal();
-            switch (features.contactStateType)
-            {
-                case ContactStateType.NormalContacts:
-                    DrawNormalContactStateFeatures(features);
-                    break;
-                case ContactStateType.Impacts:
-                    DrawImpactStateFeatures(features);
-                    break;
-            }
+            selectedState.csFeatures.DrawEditorGUI();
+            //GUILayout.BeginHorizontal();
+            //GUILayout.Space(10);
+
+            //if (Application.isPlaying)
+            //{
+            //    EditorGUILayout.EnumPopup("Contact state type", features.contactStateType);
+            //}
+            //else
+            //{
+            //    features.contactStateType = (ContactStateType)EditorGUILayout.EnumPopup("Contact state type", features.contactStateType);
+            //    switch (features.contactStateType)
+            //    {
+            //        case ContactStateType.NormalContacts:
+            //            selectedLayer.SetNodeTitle(selectedState.nodeID, "Contact state:");
+            //            break;
+            //        case ContactStateType.Impacts:
+            //            selectedLayer.SetNodeTitle(selectedState.nodeID, "Impact state:");
+            //            break;
+            //    }
+            //}
+            //GUILayout.EndHorizontal();
+            //switch (features.contactStateType)
+            //{
+            //    case ContactStateType.NormalContacts:
+            //        DrawNormalContactStateFeatures(features);
+            //        break;
+            //    case ContactStateType.Impacts:
+            //        DrawImpactStateFeatures(features);
+            //        break;
+            //}
 
 
         }

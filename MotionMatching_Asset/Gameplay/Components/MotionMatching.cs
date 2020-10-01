@@ -9,13 +9,11 @@ using UnityEngine.Playables;
 
 namespace DW_Gameplay
 {
+    [RequireComponent(typeof(Animator))]
     public class MotionMatching : MonoBehaviour
     {
         // Components
-        Animator animatorComponent;
-
-        [SerializeField]
-        Transform animatedObjectTransform;
+        private Animator animatorComponent;
 
         [SerializeField]
         private MM_AnimatorController animatorController;
@@ -122,20 +120,7 @@ namespace DW_Gameplay
         }
         #endregion
 
-
-#if UNITY_EDITOR
-        [Header("DEBUG")]
-        [SerializeField]
-        private bool drawAnimationTrajectory = true;
-        [Range(0.01f, 0.1f)]
-        [SerializeField]
-        private float pointRadius = 0.05f;
-
-#endif
-
-
         private DirectorUpdateMode timeUpdateMode = DirectorUpdateMode.GameTime;
-
 
         private void Awake()
         {
@@ -146,13 +131,11 @@ namespace DW_Gameplay
             InitializeDictionaries();
             logicLayers = new List<LogicMotionMatchingLayer>();
 
-            animatedObjectTransform = animatedObjectTransform == null ? this.transform : animatedObjectTransform;
-
-            animatorComponent = animatedObjectTransform.GetComponent<Animator>();
-            playableGraph = new MotionMatchingPlayableGraph(animatorComponent, string.Format("MM Graph: {0}", animatedObjectTransform.gameObject.name));
+            animatorComponent = this.transform.GetComponent<Animator>();
+            playableGraph = new MotionMatchingPlayableGraph(animatorComponent, string.Format("MM Graph: {0}", this.transform.gameObject.name));
 
             //InitializeLogicGraph(movingGameObject);
-            InitializeLogicGraph(animatedObjectTransform);
+            InitializeLogicGraph(this.transform);
 
             layerIndexes = new Dictionary<string, int>();
             for (int i = 0; i < logicLayers.Count; i++)
@@ -177,7 +160,7 @@ namespace DW_Gameplay
 
         void Start()
         {
-
+            animatorComponent.applyRootMotion = true;
         }
 
         void Update()
@@ -249,7 +232,7 @@ namespace DW_Gameplay
         /// <returns>Returns true when find forcing is successful happen.</returns>
         public void ForceAnimationFinding()
         {
-            for(int i = 0; i < logicLayers.Count; i++)
+            for (int i = 0; i < logicLayers.Count; i++)
             {
                 logicLayers[i].ForceAnimationFindingInCurrentState();
             }
@@ -403,7 +386,7 @@ namespace DW_Gameplay
             string layerName,
             string stateName,
             float blendTime,
-            List<FrameContact> contactPoints
+            List<SwitchStateContact> contactPoints
             )
         {
             int layerIndex = layerIndexes[layerName];
@@ -433,7 +416,7 @@ namespace DW_Gameplay
             int layerIndex,
             string stateName,
             float blendTime,
-            List<FrameContact> contactPoints
+            List<SwitchStateContact> contactPoints
             )
         {
             if (layerIndex != -1)
@@ -534,7 +517,12 @@ namespace DW_Gameplay
 
         public MotionMatchingStateType GetCurrentStateType(int layerIndex)
         {
-            return logicLayers[layerIndex].logicStates[logicLayers[layerIndex].GetCurrentStateIndex()].GetStateType();
+            return logicLayers[layerIndex].GetCurrentStateType();
+        }
+
+        public MotionMatchingStateType GetCurrentStateType(string layerName)
+        {
+            return logicLayers[layerIndexes[layerName]].GetCurrentStateType();
         }
 
         /// <summary>
@@ -612,6 +600,11 @@ namespace DW_Gameplay
             }
 
             return -1;
+        }
+
+        public PoseData GetCurrentPose(int layerIndex)
+        {
+            return logicLayers[layerIndex].GetCurrentState().GetAndCalculateCurrentPose_EditorOnly();
         }
 
         #endregion
@@ -869,41 +862,41 @@ namespace DW_Gameplay
 
             Vector3 fpPos = logicLayers[0].currentAnimationTrajectory.GetPoint(trajectoryFirstFutureIndex).position;
 
-            fpPos = animatedObjectTransform.TransformPoint(fpPos);
+            fpPos = this.transform.TransformPoint(fpPos);
 
             Vector3 currentDir;
             Vector3 wantedDir;
             float angle;
             if (strafe)
             {
-                currentDir = animatedObjectTransform.forward;
+                currentDir = this.transform.forward;
                 wantedDir = strafeForward;
                 angle = Mathf.Abs(Vector3.Angle(currentDir, wantedDir));
 
                 if (angle < strafeMaxAngle)
                 {
-                    currentDir = fpPos - animatedObjectTransform.position;
-                    wantedDir = (Vector3)inputTrajectory.GetPoint(trajectoryFirstFutureIndex).position - animatedObjectTransform.position;
+                    currentDir = fpPos - this.transform.position;
+                    wantedDir = (Vector3)inputTrajectory.GetPoint(trajectoryFirstFutureIndex).position - this.transform.position;
                 }
 
             }
             else
             {
-                currentDir = fpPos - animatedObjectTransform.position;
-                wantedDir = (Vector3)inputTrajectory.GetPoint(trajectoryFirstFutureIndex).position - animatedObjectTransform.position;
+                currentDir = fpPos - this.transform.position;
+                wantedDir = (Vector3)inputTrajectory.GetPoint(trajectoryFirstFutureIndex).position - this.transform.position;
                 angle = Mathf.Abs(Vector3.Angle(currentDir, wantedDir));
             }
 
             if (minAngle <= angle && angle <= maxAngle)
             {
                 Quaternion deltaRot = Quaternion.FromToRotation(currentDir, wantedDir);
-                Quaternion desiredRotation = animatedObjectTransform.rotation * deltaRot;
+                Quaternion desiredRotation = this.transform.rotation * deltaRot;
                 desiredRotation = Quaternion.Euler(
                     0f,
                     desiredRotation.eulerAngles.y,
                     0f);
-                animatedObjectTransform.rotation = Quaternion.RotateTowards(
-                                                animatedObjectTransform.rotation,
+                this.transform.rotation = Quaternion.RotateTowards(
+                                                this.transform.rotation,
                                                 desiredRotation,
                                                 maxSpeed * Time.deltaTime
                                                 );
@@ -939,42 +932,42 @@ namespace DW_Gameplay
 
             Vector3 fpPos = logicLayers[0].currentAnimationTrajectory.GetPoint(trajectoryFirstFutureIndex).position;
 
-            fpPos = animatedObjectTransform.TransformPoint(fpPos);
+            fpPos = this.transform.TransformPoint(fpPos);
 
             Vector3 currentDir;
             Vector3 wantedDir;
             float angle;
             if (strafe)
             {
-                currentDir = animatedObjectTransform.forward;
+                currentDir = this.transform.forward;
                 wantedDir = strafeForward;
                 angle = Mathf.Abs(Vector3.Angle(currentDir, wantedDir));
 
                 if (angle < strafeMaxAngle)
                 {
-                    currentDir = fpPos - animatedObjectTransform.position;
-                    wantedDir = (Vector3)inputTrajectory.GetPoint(trajectoryFirstFutureIndex).position - animatedObjectTransform.position;
+                    currentDir = fpPos - this.transform.position;
+                    wantedDir = (Vector3)inputTrajectory.GetPoint(trajectoryFirstFutureIndex).position - this.transform.position;
                 }
 
             }
             else
             {
-                currentDir = fpPos - animatedObjectTransform.position;
-                wantedDir = (Vector3)inputTrajectory.GetPoint(trajectoryFirstFutureIndex).position - animatedObjectTransform.position;
+                currentDir = fpPos - this.transform.position;
+                wantedDir = (Vector3)inputTrajectory.GetPoint(trajectoryFirstFutureIndex).position - this.transform.position;
                 angle = Mathf.Abs(Vector3.Angle(currentDir, wantedDir));
             }
 
             if (minAngle < angle && angle < maxAngle)
             {
                 Quaternion deltaRot = Quaternion.FromToRotation(currentDir, wantedDir);
-                Quaternion desiredRotation = animatedObjectTransform.rotation * deltaRot;
+                Quaternion desiredRotation = this.transform.rotation * deltaRot;
                 desiredRotation = Quaternion.Euler(0f, desiredRotation.eulerAngles.y, 0f);
 
                 float speedFactor = (angle - minAngle) / (maxAngle - minAngle);
                 float rotationSpeed = Mathf.Lerp(speedInMinAngle, speedInMaxAngle, speedFactor);
 
-                animatedObjectTransform.rotation = Quaternion.RotateTowards(
-                                                animatedObjectTransform.rotation,
+                this.transform.rotation = Quaternion.RotateTowards(
+                                                this.transform.rotation,
                                                 desiredRotation,
                                                 rotationSpeed * Time.deltaTime
                                                 );
@@ -984,20 +977,20 @@ namespace DW_Gameplay
         private void OrientationConstantCorrection()
         {
             float3 wantedOrientation = inputTrajectory.GetPoint(trajectoryFirstFutureIndex).orientation;
-            float3 currentOrientation = animatedObjectTransform.forward;
+            float3 currentOrientation = this.transform.forward;
 
             float angle = Mathf.Abs(Vector3.Angle(wantedOrientation, currentOrientation));
 
             if (minAngle <= angle && angle <= maxAngle)
             {
                 Quaternion deltaRot = Quaternion.FromToRotation(currentOrientation, wantedOrientation);
-                Quaternion desiredRotation = animatedObjectTransform.rotation * deltaRot;
+                Quaternion desiredRotation = this.transform.rotation * deltaRot;
                 desiredRotation = Quaternion.Euler(
                     0f,
                     desiredRotation.eulerAngles.y,
                     0f);
-                animatedObjectTransform.rotation = Quaternion.RotateTowards(
-                                                animatedObjectTransform.rotation,
+                this.transform.rotation = Quaternion.RotateTowards(
+                                                this.transform.rotation,
                                                 desiredRotation,
                                                 maxSpeed * Time.deltaTime
                                                 );
@@ -1012,21 +1005,21 @@ namespace DW_Gameplay
             )
         {
             float3 wantedOrientation = inputTrajectory.GetPoint(trajectoryFirstFutureIndex).orientation;
-            float3 currentOrientation = animatedObjectTransform.forward;
+            float3 currentOrientation = this.transform.forward;
 
             float angle = Mathf.Abs(Vector3.Angle(wantedOrientation, currentOrientation));
 
             if (minAngle < angle && angle < maxAngle)
             {
                 Quaternion deltaRot = Quaternion.FromToRotation(currentOrientation, wantedOrientation);
-                Quaternion desiredRotation = animatedObjectTransform.rotation * deltaRot;
+                Quaternion desiredRotation = this.transform.rotation * deltaRot;
                 desiredRotation = Quaternion.Euler(0f, desiredRotation.eulerAngles.y, 0f);
 
                 float speedFactor = (angle - minAngle) / (maxAngle - minAngle);
                 float rotationSpeed = Mathf.Lerp(speedInMinAngle, speedInMaxAngle, speedFactor);
 
-                animatedObjectTransform.rotation = Quaternion.RotateTowards(
-                                                animatedObjectTransform.rotation,
+                this.transform.rotation = Quaternion.RotateTowards(
+                                                this.transform.rotation,
                                                 desiredRotation,
                                                 rotationSpeed * Time.deltaTime
                                                 );
@@ -1110,24 +1103,35 @@ namespace DW_Gameplay
         #endregion
 
 #if UNITY_EDITOR
+        [Header("DEBUG")]
+        [SerializeField]
+        private bool drawAnimationTrajectory = true;
+        [SerializeField]
+        private bool drawCurrentPose = false;
+        [SerializeField]
+        private bool drawBoneVelocities = false;
+        [Range(0.01f, 0.1f)]
+        [SerializeField]
+        private float pointRadius = 0.05f;
+
         #region Drawing Gizmos
         private void DrawTrajectory()
         {
             if (drawAnimationTrajectory)
             {
-                Gizmos.color = Color.blue;
-                Gizmos.DrawWireSphere(animatedObjectTransform.position + Vector3.up * pointRadius, pointRadius);
+                Gizmos.color = Color.cyan;
+                Gizmos.DrawWireSphere(this.transform.position + Vector3.up * pointRadius, pointRadius);
             }
 
             if (drawAnimationTrajectory)
             {
                 Gizmos.color = Color.red;
                 Trajectory animT = this.GetCurrentAnimationTrajectory(0);
-                animT.TransformToWorldSpace(animatedObjectTransform);
+                animT.TransformToWorldSpace(this.transform);
                 MM_Gizmos.DrawTrajectory(
                     trajectoryPointsTimes,
-                    animatedObjectTransform.position,
-                    animatedObjectTransform.forward,
+                    this.transform.position,
+                    this.transform.forward,
                     animT,
                     false,
                     pointRadius,
@@ -1136,11 +1140,36 @@ namespace DW_Gameplay
             }
         }
 
+        private void DrawPose()
+        {
+            PoseData pose = this.GetCurrentPose(0);
+
+            for (int i = 0; i < pose.Count; i++)
+            {
+                BoneData bone = pose.bones[i];
+                Vector3 pos = this.transform.TransformPoint(bone.localPosition);
+                Vector3 vel = this.transform.TransformDirection(bone.velocity);
+
+                Gizmos.color = Color.blue;
+                Gizmos.DrawWireSphere(pos, 0.05f);
+                if (drawBoneVelocities)
+                {
+                    Gizmos.color = Color.yellow;
+                    MM_Gizmos.DrawArrow(pos, pos + vel, 0.05f);
+                }
+            }
+        }
+
         private void OnDrawGizmos()
         {
             if (Application.isPlaying)
             {
                 DrawTrajectory();
+
+                if (drawCurrentPose)
+                {
+                    DrawPose();
+                }
             }
         }
         #endregion

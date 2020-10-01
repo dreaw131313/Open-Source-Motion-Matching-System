@@ -829,8 +829,8 @@ namespace DW_Gameplay
         public float CalculateCost(TrajectoryPoint point, TrajectoryCostType type)
         {
             float cost = 0;
-            switch (type)
-            {
+            //switch (type)
+            //{
                 //case TrajectoryCostType.Position:
                 //    cost += CalculatePositionCost(point);
                 //    break;
@@ -852,14 +852,14 @@ namespace DW_Gameplay
                 //    cost += CalculateVelocityCost(point);
                 //    cost += CalculateOrientationCost(point);
                 //    break;
-                case TrajectoryCostType.PositionVelocityOrientation:
+                //case TrajectoryCostType.PositionVelocityOrientation:
                     cost += CalculatePositionCost(point);
                     cost += CalculateVelocityCost(point);
                     cost += CalculateOrientationCost(point);
-                    break;
-                case TrajectoryCostType.None:
-                    break;
-            }
+                    //break;
+               // case TrajectoryCostType.None:
+                    //break;
+            //}
             return cost;
         }
 

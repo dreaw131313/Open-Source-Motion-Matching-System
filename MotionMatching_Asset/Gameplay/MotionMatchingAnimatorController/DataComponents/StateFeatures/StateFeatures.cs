@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using Unity.Mathematics;
+using UnityEditor;
 using UnityEngine;
 
 namespace DW_Gameplay
@@ -65,25 +66,94 @@ namespace DW_Gameplay
         [SerializeField]
         public bool adapt = false;
         [SerializeField]
-        public bool gotoStartContactPoint = false;
-        [SerializeField]
         public float contactPointsWeight = 1f;
-        [SerializeField]
-        public bool rotateToStart = true;
         [SerializeField]
         public ContactPointPositionCorrectionType postionCorrection = ContactPointPositionCorrectionType.MovePosition;
         [SerializeField]
         public int middleContactsCount = 1;
+        [SerializeField]
+        public bool rotateToStart = false;
+        [SerializeField]
+        public bool rotateToContacts = false;
+        [SerializeField]
+        public bool rotateOnContacts = false;
 
         public ContactStateFeatures()
         {
             contactMovementType = ContactStateMovemetType.ContactLand;
             contactCostType = ContactPointCostType.PositionNormal_OR_Direction;
             adapt = false;
-            gotoStartContactPoint = false;
             contactPointsWeight = 1f;
             rotateToStart = true;
             postionCorrection = ContactPointPositionCorrectionType.MovePosition;
         }
+
+#if UNITY_EDITOR
+        public void DrawEditorGUI()
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(10);
+            if (Application.isPlaying)
+            {
+                EditorGUILayout.EnumPopup("Contact state type", contactStateType);
+            }
+            else
+            {
+                contactStateType = (ContactStateType)EditorGUILayout.EnumPopup("Contact state type", contactStateType);
+            }
+
+            GUILayout.EndHorizontal();
+
+            switch (contactStateType)
+            {
+                case ContactStateType.NormalContacts:
+                    DrawNormalContactStateFeatures();
+                    break;
+                case ContactStateType.Impacts:
+                    break;
+            }
+
+        }
+
+        public void DrawNormalContactStateFeatures()
+        {
+            //GUILayout.BeginHorizontal();
+            //GUILayout.Space(10);
+            //features.adapt = EditorGUILayout.Toggle(new GUIContent("Adapt movemet"), features.adapt);
+            //GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(10);
+            rotateToStart = EditorGUILayout.Toggle(new GUIContent("Rotate to start"), rotateToStart);
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(10);
+            rotateToContacts = EditorGUILayout.Toggle(new GUIContent("Rotate to contacts"), rotateToContacts);
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(10);
+            rotateOnContacts = EditorGUILayout.Toggle(new GUIContent("Rotate on contacts"), rotateOnContacts);
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(10);
+            postionCorrection = (ContactPointPositionCorrectionType)EditorGUILayout.EnumPopup(new GUIContent("Position correction"), postionCorrection);
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(10);
+            contactMovementType = (ContactStateMovemetType)EditorGUILayout.EnumPopup(new GUIContent("Contact type"), contactMovementType);
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(10);
+            middleContactsCount = EditorGUILayout.IntField(new GUIContent("Contacts count"), middleContactsCount);
+            GUILayout.EndHorizontal();
+        }
+
+
+#endif
     }
 }

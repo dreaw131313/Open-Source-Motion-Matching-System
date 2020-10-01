@@ -234,12 +234,13 @@ namespace DW_Gameplay
                 //jobsHandle[i] = mmJobs[i].Schedule();
             }
 
-            //JobHandle.ScheduleBatchedJobs();
 
             for (int i = 0; i < jobsHandle.Length; i++)
             {
                 jobsHandle[i] = mmJobs[i].Schedule();
             }
+
+            //JobHandle.ScheduleBatchedJobs();
 
             //JobHandle.CompleteAll(jobsHandle);
         }
@@ -270,7 +271,7 @@ namespace DW_Gameplay
             {
                 if (!(currentMotionDataGroupIndex == logicLayer.bestPoseInfo.groupIndex &&
                     currentDataIndex == logicLayer.bestPoseInfo.clipIndex &&
-                    !GetCurrenMMData().blendToYourself))
+                    !GetCurrentMMData().blendToYourself))
                 {
                     playableGraph.CreateBlendMotionMatchingAnimation(
                         dataState.motionDataGroups[logicLayer.bestPoseInfo.groupIndex].animationData[logicLayer.bestPoseInfo.clipIndex],

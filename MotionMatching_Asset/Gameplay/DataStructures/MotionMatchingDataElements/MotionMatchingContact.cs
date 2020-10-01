@@ -16,6 +16,8 @@ namespace DW_Gameplay
         [SerializeField]
         public Quaternion rotation;
         [SerializeField]
+        public Quaternion rotationFromForwardToNextContactDir;
+        [SerializeField]
         public float startTime;
         [SerializeField]
         public float endTime;
@@ -29,6 +31,7 @@ namespace DW_Gameplay
             endTime = animationTime;
             this.contactNormal = Vector3.down;
             rotation = Quaternion.identity;
+            rotationFromForwardToNextContactDir = Quaternion.identity;
             //this.impactRecoveryTime = endTime;
         }
         
@@ -39,6 +42,7 @@ namespace DW_Gameplay
             endTime = animationTime;
             this.contactNormal = contactSurfaceNormal;
             rotation = Quaternion.identity;
+            rotationFromForwardToNextContactDir = Quaternion.identity;
             //this.impactRecoveryTime = endTime;
         }
 
@@ -139,16 +143,16 @@ namespace DW_Gameplay
     {
         [SerializeField]
         public float3 position;
-        [SerializeField]
-        public float3 forward;
+        //[SerializeField]
+        //public float3 forward;
         [SerializeField]
         public float3 normal;
 
-        public FrameContact(float3 position, float3 contactSurfaceNormal, float3 forward)
+        public FrameContact(float3 position, float3 contactSurfaceNormal)//, float3 forward)
         {
             this.position = position;
             this.normal = contactSurfaceNormal;
-            this.forward = forward;
+            //this.forward = forward;
         }
 
         public void SetPosition(float3 position)
@@ -163,7 +167,7 @@ namespace DW_Gameplay
 
         public void SetForward(float3 forward)
         {
-            this.forward = forward;
+            //this.forward = forward;
         }
 
         public static FrameContact Lerp(FrameContact first, FrameContact second, float factor)
@@ -171,7 +175,7 @@ namespace DW_Gameplay
             FrameContact cp = new FrameContact();
             cp.position = math.lerp(first.position, second.position, factor);
             cp.normal = math.lerp(first.normal, second.normal, factor);
-            cp.forward = math.lerp(first.forward, second.forward, factor);
+            //cp.forward = math.lerp(first.forward, second.forward, factor);
             return cp;
         }
 
@@ -204,6 +208,21 @@ namespace DW_Gameplay
         private float CalculateReverseSurfaceNormalCost(FrameContact to)
         {
             return math.lengthsq(this.normal - to.normal);
+        }
+    }
+
+    [System.Serializable]
+    public struct SwitchStateContact
+    {
+        [SerializeField]
+        public FrameContact frameContact;
+        [SerializeField]
+        public Vector3 forward;
+
+        public SwitchStateContact(FrameContact contactPoint, Vector3 forward)
+        {
+            this.forward = forward;
+            this.frameContact = contactPoint;
         }
     }
 }

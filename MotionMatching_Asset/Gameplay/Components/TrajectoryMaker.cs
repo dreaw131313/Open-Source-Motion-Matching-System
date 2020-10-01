@@ -1,4 +1,5 @@
-﻿using DW_Editor;
+﻿
+using DW_Editor;
 using System.Collections.Generic;
 using Unity.Mathematics;
 using UnityEngine;
@@ -23,7 +24,7 @@ namespace DW_Gameplay
         [Range(0.01f, 5f)]
         private float maxTimeToCalculateFactor = 1f;
         [SerializeField]
-        [Range(0.01f, 1f)]
+        [Range(0f, 1f)]
         private float sharpTurnFactor = 1f;
         [SerializeField]
         [Min(0.01f)]
@@ -130,14 +131,13 @@ namespace DW_Gameplay
             strafeForward = animatedObject.forward;
             input = Vector3.zero;
 
-
         }
 
         void Start()
         {
             if (useAttachedMotionMatchingComponent)
             {
-                MMC = GetComponent<MotionMatching>();
+                MMC = animatedObject.GetComponent<MotionMatching>();
                 if (MMC == null)
                 {
                     throw new System.Exception("Cannot find the Motion Matching component!");
@@ -447,13 +447,14 @@ namespace DW_Gameplay
             this.deceleration = settings.deceleration;
         }
 
+#if UNITY_EDITOR
         private void OnDrawGizmos()
         {
             if (Application.isPlaying)
             {
                 if (drawDebug)
                 {
-                    Gizmos.color = Color.blue;
+                    Gizmos.color = Color.cyan;
                     Gizmos.DrawWireSphere(this.transform.position + Vector3.up * pointRadius, pointRadius);
 
                     Gizmos.color = Color.green;
@@ -469,6 +470,7 @@ namespace DW_Gameplay
                 }
             }
         }
+#endif
 
     }
 }

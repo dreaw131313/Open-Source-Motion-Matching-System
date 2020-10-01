@@ -27,7 +27,7 @@ namespace DW_Editor
         Vector2 rightScroll = Vector2.zero;
 
         float leftWidthFactor = 0.2f;
-        float rightWidthFactor = 0.2f;
+        float rightWidthFactor = 0.4f;
 
         float margin = 10;
 

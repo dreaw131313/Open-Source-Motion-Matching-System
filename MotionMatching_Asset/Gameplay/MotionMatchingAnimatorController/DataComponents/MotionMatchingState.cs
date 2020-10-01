@@ -72,7 +72,7 @@ namespace DW_Gameplay
         public ContactStateFeatures csFeatures;
 
         [SerializeField]
-        public float speedMultiplayer = 1f;
+        public float speedMultiplier = 1f;
 
         public int maxJobsCount { get; private set; }
 
@@ -90,7 +90,7 @@ namespace DW_Gameplay
             trajectoryCostWeight = 1f;
             poseCostWeight = 1f;
             transitions = new List<Transition>();
-            speedMultiplayer = 1f;
+            speedMultiplier = 1f;
             whereCanFindingNextPose = new List<float2>();
             motionDataGroups = new List<MotionDataGroup>();
             motionDataGroups.Add(new MotionDataGroup("MotionGroup"));
@@ -306,8 +306,8 @@ namespace DW_Gameplay
                                 {
                                     group.contactPointsPerJob[jobIndex][cpIndex] = new FrameContact(
                                         group.animationData[clipIndex][frameIndex].contactPoints[i].position,
-                                        group.animationData[clipIndex][frameIndex].contactPoints[i].normal,
-                                        group.animationData[clipIndex][frameIndex].contactPoints[i].forward
+                                        group.animationData[clipIndex][frameIndex].contactPoints[i].normal//,
+                                        //group.animationData[clipIndex][frameIndex].contactPoints[i].forward
                                         );
                                     cpIndex++;
 
@@ -333,8 +333,8 @@ namespace DW_Gameplay
                                 {
                                     group.contactPointsPerJob[jobIndex][cpIndex] = new FrameContact(
                                         group.animationData[clipIndex][frameIndex].contactPoints[i].position,
-                                       group.animationData[clipIndex][frameIndex].contactPoints[i].normal,
-                                        group.animationData[clipIndex][frameIndex].contactPoints[i].forward
+                                       group.animationData[clipIndex][frameIndex].contactPoints[i].normal
+                                        //group.animationData[clipIndex][frameIndex].contactPoints[i].forward
                                         );
                                     cpIndex++;
 
@@ -360,8 +360,8 @@ namespace DW_Gameplay
                                 {
                                     group.contactPointsPerJob[jobIndex][cpIndex] = new FrameContact(
                                         group.animationData[clipIndex][frameIndex].contactPoints[i].position,
-                                        group.animationData[clipIndex][frameIndex].contactPoints[i].normal,
-                                        group.animationData[clipIndex][frameIndex].contactPoints[i].forward
+                                        group.animationData[clipIndex][frameIndex].contactPoints[i].normal
+                                        //group.animationData[clipIndex][frameIndex].contactPoints[i].forward
                                         );
                                     cpIndex++;
 
@@ -369,8 +369,8 @@ namespace DW_Gameplay
                                 int lastPoimtIndex = group.animationData[clipIndex][frameIndex].contactPoints.Length - 1;
                                 group.contactPointsPerJob[jobIndex][cpIndex] = new FrameContact(
                                         group.animationData[clipIndex][frameIndex].contactPoints[lastPoimtIndex].position,
-                                        group.animationData[clipIndex][frameIndex].contactPoints[lastPoimtIndex].normal,
-                                        group.animationData[clipIndex][frameIndex].contactPoints[lastPoimtIndex].forward
+                                        group.animationData[clipIndex][frameIndex].contactPoints[lastPoimtIndex].normal
+                                        //group.animationData[clipIndex][frameIndex].contactPoints[lastPoimtIndex].forward
                                         );
                                 cpIndex++;
 
@@ -395,8 +395,8 @@ namespace DW_Gameplay
                                     //Debug.Log(string.Format("clipIndex: {0} frameIndex: {1} jobIndex: {2} cpIndex: {3} ", clipIndex, frameIndex, jobIndex, cpIndex));
                                     group.contactPointsPerJob[jobIndex][cpIndex] = new FrameContact(
                                         group.animationData[clipIndex][frameIndex].contactPoints[i].position,
-                                        group.animationData[clipIndex][frameIndex].contactPoints[i].normal,
-                                        group.animationData[clipIndex][frameIndex].contactPoints[i].forward
+                                        group.animationData[clipIndex][frameIndex].contactPoints[i].normal
+                                        //group.animationData[clipIndex][frameIndex].contactPoints[i].forward
                                         );
                                     cpIndex++;
                                 }
@@ -404,8 +404,8 @@ namespace DW_Gameplay
                                 int lastPoimtIndex = group.animationData[clipIndex][frameIndex].contactPoints.Length - 1;
                                 group.contactPointsPerJob[jobIndex][cpIndex] = new FrameContact(
                                         group.animationData[clipIndex][frameIndex].contactPoints[lastPoimtIndex].position,
-                                        group.animationData[clipIndex][frameIndex].contactPoints[lastPoimtIndex].normal,
-                                        group.animationData[clipIndex][frameIndex].contactPoints[lastPoimtIndex].forward
+                                        group.animationData[clipIndex][frameIndex].contactPoints[lastPoimtIndex].normal
+                                        //group.animationData[clipIndex][frameIndex].contactPoints[lastPoimtIndex].forward
                                         );
                                 cpIndex++;
 
@@ -427,16 +427,16 @@ namespace DW_Gameplay
                             {
                                 group.contactPointsPerJob[jobIndex][cpIndex] = new FrameContact(
                                     group.animationData[clipIndex][frameIndex].contactPoints[0].position,
-                                    group.animationData[clipIndex][frameIndex].contactPoints[0].normal,
-                                    group.animationData[clipIndex][frameIndex].contactPoints[0].forward
+                                    group.animationData[clipIndex][frameIndex].contactPoints[0].normal
+                                    //group.animationData[clipIndex][frameIndex].contactPoints[0].forward
                                     );
                                 cpIndex++;
 
                                 int lastPoimtIndex = group.animationData[clipIndex][frameIndex].contactPoints.Length - 1;
                                 group.contactPointsPerJob[jobIndex][cpIndex] = new FrameContact(
                                         group.animationData[clipIndex][frameIndex].contactPoints[lastPoimtIndex].position,
-                                        group.animationData[clipIndex][frameIndex].contactPoints[lastPoimtIndex].normal,
-                                        group.animationData[clipIndex][frameIndex].contactPoints[lastPoimtIndex].forward
+                                        group.animationData[clipIndex][frameIndex].contactPoints[lastPoimtIndex].normal
+                                        //group.animationData[clipIndex][frameIndex].contactPoints[lastPoimtIndex].forward
                                         );
                                 cpIndex++;
 
@@ -552,8 +552,8 @@ namespace DW_Gameplay
 
                         group.contactPointsPerJob[jobIndex][cpIndex] = new FrameContact(
                                         group.animationData[clipIndex][frameIndex].contactPoints[0].position,
-                                        group.animationData[clipIndex][frameIndex].contactPoints[0].normal,
-                                        group.animationData[clipIndex][frameIndex].contactPoints[0].forward
+                                        group.animationData[clipIndex][frameIndex].contactPoints[0].normal
+                                        //group.animationData[clipIndex][frameIndex].contactPoints[0].forward
                                         );
                         cpIndex++;
 

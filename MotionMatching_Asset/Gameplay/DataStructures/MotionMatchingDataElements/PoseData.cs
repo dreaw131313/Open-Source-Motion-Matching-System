@@ -64,5 +64,16 @@ namespace DW_Gameplay
                 buffor.SetBone(BoneData.Lerp(first.GetBoneData(i), next.GetBoneData(i), factor), i);
             }
         }
+
+        public void TransformToWorldSpace(Transform fromSpace)
+        {
+            for(int i = 0; i < Count; i++)
+            {
+                BoneData b = bones[i];
+                b.localPosition = fromSpace.TransformPoint(b.localPosition);
+                b.velocity = fromSpace.TransformDirection(b.velocity);
+                bones[i] = b;
+            }
+        }
     }
 }

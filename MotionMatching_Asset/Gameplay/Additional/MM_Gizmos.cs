@@ -7,6 +7,7 @@ namespace DW_Editor
 {
     public static class MM_Gizmos
     {
+#if UNITY_EDITOR
         public static void DrawTrajectory(
             float[] pointsTime,
             Vector3 objectPosition,
@@ -160,6 +161,71 @@ namespace DW_Editor
             }
         }
 
+        public static void DrawTrajectory_Handles(
+            float[] pointsTime,
+            Vector3 objectPosition,
+            Vector3 objectForward,
+            Trajectory trajectory,
+            float pointSphereRadious,
+            float arrowLength
+            )
+        {
+            float arrowRiseUp = 1.5f * pointSphereRadious;
+            float3 up = new float3(0, 1, 0);
+            for (int i = 0; i < trajectory.Length; i++)
+            {
+                float3 current = up * pointSphereRadious + trajectory.GetPoint(i).position;
+                float3 arrowDir = trajectory.GetPoint(i).orientation;
+
+                bool3 result = arrowDir == float3.zero;
+
+                Handles.DrawLine(current, current + up * arrowRiseUp);
+
+                if (result[0] && result[1] && result[2])
+                {
+                    DrawArrow_Handles(
+                        current + up * arrowRiseUp,
+                        objectForward,
+                        arrowLength,
+                        arrowLength * 0.33f
+                        );
+                }
+                else
+                {
+                    DrawArrow_Handles(
+                        current + up * arrowRiseUp,
+                        arrowDir,
+                        arrowLength,
+                        arrowLength * 0.33f
+                        );
+                }
+
+                if (i < (trajectory.Length - 1))
+                {
+                    float3 next = up * pointSphereRadious + trajectory.GetPoint(i + 1).position;
+                    if (pointsTime[i + 1] < 0 ||
+                        pointsTime[i] > 0 && pointsTime[i + 1] > 0)
+                    {
+                        Handles.DrawLine(
+                            current,
+                            next
+                            );
+                    }
+                    else// if(goal[i].futureTime<0 && goal[i+1].futureTime > 0)
+                    {
+                        Handles.DrawLine(
+                            current,
+                            Vector3.up * pointSphereRadious + objectPosition
+                            );
+                        Handles.DrawLine(
+                            Vector3.up * pointSphereRadious + objectPosition,
+                            up * pointSphereRadious + trajectory.GetPoint(i + 1).position
+                            );
+                    }
+                }
+            }
+        }
+
         public static void DrawArrowFromSpheres(
             Vector3 pos,
             Vector3 direction,
@@ -242,6 +308,10 @@ namespace DW_Editor
             float armsLenght
             )
         {
+            if (dir == Vector3.zero)
+            {
+                return;
+            }
             Vector3 right = Quaternion.LookRotation(dir) * Quaternion.Euler(0, 180 + 45f, 0) * new Vector3(0, 0, 1);
             Vector3 left = Quaternion.LookRotation(dir) * Quaternion.Euler(0, 180 - 45f, 0) * new Vector3(0, 0, 1);
 
@@ -253,6 +323,52 @@ namespace DW_Editor
             Gizmos.DrawLine(arrowTipPos, arrowTipPos + rightDir);
             Gizmos.DrawLine(arrowTipPos, arrowTipPos + leftDir);
         }
+
+        public static void DrawArrow(
+            Vector3 from,
+            Vector3 to,
+            float armsLength
+            )
+        {
+            Vector3 delta = from - to;
+            float length = delta.magnitude;
+            DrawArrow(from, delta.normalized, length, armsLength);
+        }
+
+        public static void DrawArrow_Handles(
+            Vector3 pos,
+            Vector3 dir,
+            float length,
+            float armsLenght
+            )
+        {
+            if(dir == Vector3.zero)
+            {
+                return;
+            }
+            Vector3 right = Quaternion.LookRotation(dir) * Quaternion.Euler(0, 180 + 45f, 0) * new Vector3(0, 0, 1);
+            Vector3 left = Quaternion.LookRotation(dir) * Quaternion.Euler(0, 180 - 45f, 0) * new Vector3(0, 0, 1);
+
+            Vector3 arrowTipPos = pos + dir * length;
+            Vector3 rightDir = right * armsLenght;
+            Vector3 leftDir = left * armsLenght;
+
+            Handles.DrawLine(pos, arrowTipPos);
+            Handles.DrawLine(arrowTipPos, arrowTipPos + rightDir);
+            Handles.DrawLine(arrowTipPos, arrowTipPos + leftDir);
+        }
+
+        public static void DrawArrow_Handles(
+            Vector3 from,
+            Vector3 to,
+            float armsLength
+            )
+        {
+            Vector3 delta = to- from;
+            float length = delta.magnitude;
+            DrawArrow_Handles(from, delta.normalized, length, armsLength);
+        }
+
 
         public static void DrawArrowHandles(
             Vector3 pos,
@@ -304,5 +420,28 @@ namespace DW_Editor
 
             }
         }
+
+        public static void DrawPose(PoseData pose, Color poseColor, Color velColor, bool drawVel = false)
+        {
+            for (int i = 0; i < pose.Count; i++)
+            {
+                Handles.color = poseColor;
+                Handles.DrawWireCube(
+                    pose.bones[i].localPosition,
+                    Vector3.one * 0.1f
+                    );
+
+                if (drawVel)
+                {
+                    Handles.color = velColor;
+                    DrawArrow_Handles(
+                        pose.bones[i].localPosition,
+                        pose.bones[i].localPosition + pose.bones[i].velocity,
+                        0.2f
+                        );
+                }
+            }
+        }
+#endif
     }
 }

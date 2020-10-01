@@ -16,7 +16,8 @@ namespace DW_Gameplay
         private int targetContactPointIndex;
         private bool gettingAdaptedPoints = true;
 
-        Quaternion startRotation;
+        Quaternion rotationToContact;
+        Quaternion rotationOnContact;
         float degreeSpeed;
 
         float startTime;
@@ -83,8 +84,15 @@ namespace DW_Gameplay
             targetContactPointIndex = 0;
 
             NativeArray<float2> findingIntervals = new NativeArray<float2>(whereCanFindingBestPose.ToArray(), Allocator.TempJob);
-            NativeArray<FrameContact> contactPointsNative = new NativeArray<FrameContact>(logicLayer.contactPoints.ToArray(), Allocator.TempJob);
+            NativeArray<FrameContact> contactPointsNative = new NativeArray<FrameContact>(logicLayer.contactPoints.Count, Allocator.TempJob);
 
+            //making native contactsl
+            for (int i = 0; i < logicLayer.contactPoints.Count; i++)
+            {
+                contactPointsNative[i] = logicLayer.contactPoints[i].frameContact;
+            }
+
+            // making native pose
             for (int i = 0; i < currentPose.Count; i++)
             {
                 logicLayer.nativePose[i] = currentPose.GetBoneData(i);
@@ -149,13 +157,13 @@ namespace DW_Gameplay
 
                 if (dataState.csFeatures.rotateToStart)
                 {
-                    Vector3 dir = logicLayer.contactPoints[1].position - logicLayer.contactPoints[0].position;
+                    Vector3 dir = logicLayer.contactPoints[1].frameContact.position - logicLayer.contactPoints[0].frameContact.position;
                     dir = Vector3.ProjectOnPlane(dir, Vector3.up);
-                    dir = this.GetCurrenMMData().fromFirstToSecondContactRot * dir;
+                    dir = this.GetCurrentMMData().fromFirstToSecondContactRot * dir;
 
-                    startRotation = Quaternion.LookRotation(dir, Vector3.up);
+                    rotationToContact = Quaternion.LookRotation(dir, Vector3.up);
 
-                    float rotationTime = (this.GetCurrenMMData().GetContactStartTime(0) - currentClipLocalTime) / dataState.speedMultiplayer;
+                    float rotationTime = (this.GetCurrentMMData().GetContactStartTime(0) - currentClipLocalTime) / dataState.speedMultiplier;
 
                     if (rotationTime == 0)
                     {
@@ -166,20 +174,20 @@ namespace DW_Gameplay
                         rotationTime = Mathf.Abs(rotationTime);
                     }
 
-                    degreeSpeed = Quaternion.Angle(this.gameObject.rotation, startRotation) / rotationTime;
+                    degreeSpeed = Quaternion.Angle(this.Transform.rotation, rotationToContact) / rotationTime;
                 }
 
 #if UNITY_EDITOR
 
                 startTime = currentClipLocalTime;
-                previewPos = gameObject.position;
+                previewPos = Transform.position;
 
 #else
 
-            if(state.csFeatures.postionCorrection == ContactPointPositionCorrectionType.LerpPosition)
+            if(dataState.csFeatures.postionCorrection == ContactPointPositionCorrectionType.LerpPosition)
             { 
                 startTime = currentClipLocalTime;
-                previewPos = gameObject.position;
+                previewPos = Transform.position;
             }
 #endif
             }
@@ -218,61 +226,57 @@ namespace DW_Gameplay
 
         protected override void LateUpdate()
         {
-            if (dataState.csFeatures.contactStateType == ContactStateType.NormalContacts)
+            if (targetContactPointIndex < this.GetCurrentMMData().contactPoints.Count - 1)
             {
-                if (targetContactPointIndex < this.GetCurrenMMData().contactPoints.Count - 1)
+                if (this.currentClipLocalTime >= this.GetCurrentMMData().GetContactEndTime(targetContactPointIndex))
                 {
-                    if (this.currentClipLocalTime >= this.GetCurrenMMData().GetContactEndTime(targetContactPointIndex))
+                    int fromContactPoint = targetContactPointIndex;
+                    targetContactPointIndex++;
+
+                    if (stateBehaviors != null)
                     {
-                        int fromContactPoint = targetContactPointIndex;
-                        targetContactPointIndex++;
-
-                        if (stateBehaviors != null)
+                        for (int contactEventIndex = 0; contactEventIndex < stateBehaviors.Count; contactEventIndex++)
                         {
-                            for (int contactEventIndex = 0; contactEventIndex < stateBehaviors.Count; contactEventIndex++)
-                            {
-                                stateBehaviors[contactEventIndex].OnContactPointChange(fromContactPoint, targetContactPointIndex);
-                            }
+                            stateBehaviors[contactEventIndex].OnContactPointChange(fromContactPoint, targetContactPointIndex);
                         }
-#if UNITY_EDITOR
-                        //startTime = currentClipLocalTime;
-                        startTime = this.GetCurrenMMData().GetContactEndTime(targetContactPointIndex - 1);
-                        previewPos = this.gameObject.position;
-
-#else
-
-                        if(state.csFeatures.postionCorrection == ContactPointPositionCorrectionType.LerpPosition)
-                        {
-                            //startTime = currentClipLocalTime;
-                            startTime = state.animationData[currentDataIndex].GetContactEndTime(targetContactPointIndex);
-                            previewPos = this.gameObject.position;
-                        }
-#endif
                     }
+#if UNITY_EDITOR
+                    //startTime = currentClipLocalTime;
+                    startTime = this.GetCurrentMMData().GetContactEndTime(targetContactPointIndex - 1);
+                    previewPos = this.Transform.position;
+#else
+                    if(dataState.csFeatures.postionCorrection == ContactPointPositionCorrectionType.LerpPosition)
+                    {
+                        //startTime = currentClipLocalTime;
+                        startTime = GetCurrentMMData().GetContactEndTime(targetContactPointIndex);
+                        previewPos = Transform.position;
+                    }
+#endif
                 }
-
-                switch (this.contactType)
-                {
-                    case ContactStateMovemetType.StartContact:
-                        SC_LateUpdate();
-                        break;
-                    case ContactStateMovemetType.ContactLand:
-                        CL_LateUpdate();
-                        break;
-                    case ContactStateMovemetType.StartContactLand:
-                        SCL_LateUpdate();
-                        break;
-                    case ContactStateMovemetType.StartLand:
-                        SL_LateUpdate();
-                        break;
-                    case ContactStateMovemetType.Contact:
-                        C_LateUpdate();
-                        break;
-                }
-
-                RotateToStartRotation();
-
             }
+
+            switch (this.contactType)
+            {
+                case ContactStateMovemetType.StartContact:
+                    SC_LateUpdate();
+                    break;
+                case ContactStateMovemetType.ContactLand:
+                    CL_LateUpdate();
+                    break;
+                case ContactStateMovemetType.StartContactLand:
+                    SCL_LateUpdate();
+                    break;
+                case ContactStateMovemetType.StartLand:
+                    SL_LateUpdate();
+                    break;
+                case ContactStateMovemetType.Contact:
+                    C_LateUpdate();
+                    break;
+            }
+
+            //RotateToStartRotation();
+            RotateToNextPoint();
+            RotateOnContacts();
         }
 
         protected override void Exit()
@@ -366,68 +370,156 @@ namespace DW_Gameplay
             JoinJobsOutput();
         }
 
-        
-
         private void MoveToContactPoint(int contactPointIndex, float3 toWorldPosition)
         {
-            if (currentClipLocalTime < this.GetCurrenMMData().GetContactStartTime(contactPointIndex))
+            if (currentClipLocalTime < this.GetCurrentMMData().GetContactStartTime(contactPointIndex))
             {
                 if (contactPointIndex > 0 &&
-                    currentClipLocalTime > this.GetCurrenMMData().GetContactEndTime(contactPointIndex - 1) ||
+                    currentClipLocalTime > this.GetCurrentMMData().GetContactEndTime(contactPointIndex - 1) ||
                     contactPointIndex == 0)
                 {
-                    float deltaTime = (this.GetCurrenMMData().GetContactStartTime(contactPointIndex) - currentClipLocalTime) / dataState.speedMultiplayer;
+                    float deltaTime = (this.GetCurrentMMData().GetContactStartTime(contactPointIndex) - currentClipLocalTime) / dataState.speedMultiplier;
 
-                    float3 currentContactPointPosition = gameObject.TransformPoint(
-                        this.GetCurrenMMData().GetContactPoint(contactPointIndex, currentClipLocalTime).position
+                    float3 currentContactPointPosition = Transform.TransformPoint(
+                        this.GetCurrentMMData().GetContactPointInTime(contactPointIndex, currentClipLocalTime).position
                         );
 
                     float3 vel = (toWorldPosition - currentContactPointPosition) / deltaTime;
 
-                    gameObject.position += (Vector3)(vel * Time.deltaTime);
+                    Transform.position += (Vector3)(vel * Time.deltaTime);
                 }
             }
         }
 
         private void LerpToPosition(int contactPointIndex)
         {
-            if (currentClipLocalTime < this.GetCurrenMMData().GetContactStartTime(contactPointIndex))
+            if (currentClipLocalTime < this.GetCurrentMMData().GetContactStartTime(contactPointIndex))
             {
                 if (contactPointIndex > 0 &&
-                    currentClipLocalTime > this.GetCurrenMMData().GetContactEndTime(contactPointIndex - 1) ||
+                    currentClipLocalTime > this.GetCurrentMMData().GetContactEndTime(contactPointIndex - 1) ||
                     contactPointIndex == 0)
                 {
-                    float targetPointStartTime = this.GetCurrenMMData().GetContactStartTime(contactPointIndex);
+                    float targetPointStartTime = this.GetCurrentMMData().GetContactStartTime(contactPointIndex);
 
                     float factor = (currentClipLocalTime - startTime) / (targetPointStartTime - startTime);
-                    factor /= dataState.speedMultiplayer;
+                    factor /= dataState.speedMultiplier;
 
-                    Vector3 nextContactPointDesiredPos = logicLayer.contactPoints[contactPointIndex].position;
+                    Vector3 nextContactPointDesiredPos = logicLayer.contactPoints[contactPointIndex].frameContact.position;
 
-                    FrameContact cp = this.GetCurrenMMData().GetContactPoint(contactPointIndex, currentClipLocalTime);
+                    FrameContact cp = this.GetCurrentMMData().GetContactPointInTime(contactPointIndex, currentClipLocalTime);
 
-                    Vector3 currentContatcPointPos = gameObject.TransformPoint(cp.position);
-
+                    Vector3 currentContatcPointPos = Transform.TransformPoint(cp.position);
                     Vector3 contactPosDelta = nextContactPointDesiredPos - currentContatcPointPos;
+                    Vector3 desiredObjectPos = this.Transform.position + contactPosDelta;
 
-                    Vector3 desiredObjectPos = this.gameObject.position + contactPosDelta;
-
-
-                    this.gameObject.position = Vector3.Lerp(previewPos, desiredObjectPos, factor);
+                    this.Transform.position = Vector3.Lerp(previewPos, desiredObjectPos, factor);
                 }
             }
         }
 
-
-        private void RotateToStartRotation()
+        private void RotateToSpecificPoint()
         {
-            if (targetContactPointIndex == 0 && dataState.csFeatures.rotateToStart)
+            int index = targetContactPointIndex;
+            if (currentClipLocalTime < GetCurrentMMData().GetContactStartTime(targetContactPointIndex)
+                )
             {
-                this.gameObject.rotation = Quaternion.RotateTowards(
-                    this.gameObject.rotation,
-                    startRotation,
+                Vector3 dir = logicLayer.contactPoints[index + 1].frameContact.position - logicLayer.contactPoints[index].frameContact.position;
+                dir = Vector3.ProjectOnPlane(dir, Vector3.up);
+                dir = this.GetCurrentMMData().contactPoints[index].rotationFromForwardToNextContactDir * dir;
+
+                rotationToContact = Quaternion.LookRotation(dir, Vector3.up);
+
+                float rotationTime = (this.GetCurrentMMData().GetContactStartTime(targetContactPointIndex) - currentClipLocalTime) / dataState.speedMultiplier;
+
+                if (rotationTime == 0)
+                {
+                    rotationTime = 0.001f;
+                }
+                else if (rotationTime < 0)
+                {
+                    rotationTime = Mathf.Abs(rotationTime);
+                }
+
+                degreeSpeed = Quaternion.Angle(this.Transform.rotation, rotationToContact) / rotationTime;
+
+                this.Transform.rotation = Quaternion.RotateTowards(
+                    this.Transform.rotation,
+                    rotationToContact,
                     degreeSpeed * Time.deltaTime
                     );
+            }
+            else
+            {
+
+            }
+        }
+
+        private void RotateToNextPoint()
+        {
+            switch (dataState.csFeatures.contactMovementType)
+            {
+                case ContactStateMovemetType.StartContact:
+                    if (targetContactPointIndex == 0 && dataState.csFeatures.rotateToStart ||
+                        targetContactPointIndex <= dataState.csFeatures.middleContactsCount && dataState.csFeatures.rotateToContacts)
+                    {
+                        RotateToSpecificPoint();
+                    }
+                    break;
+                case ContactStateMovemetType.Contact:
+                    if (targetContactPointIndex > 0 &&
+                        targetContactPointIndex <= dataState.csFeatures.middleContactsCount &&
+                        dataState.csFeatures.rotateToContacts)
+                    {
+                        RotateToSpecificPoint();
+                    }
+                    break;
+                case ContactStateMovemetType.ContactLand:
+                    if (targetContactPointIndex > 0 &&
+                        targetContactPointIndex <= dataState.csFeatures.middleContactsCount &&
+                        dataState.csFeatures.rotateToContacts)
+                    {
+                        RotateToSpecificPoint();
+                    }
+                    break;
+                case ContactStateMovemetType.StartLand:
+                    if (targetContactPointIndex == 0 && dataState.csFeatures.rotateToStart)
+                    {
+                        RotateToSpecificPoint();
+                    }
+                    break;
+                case ContactStateMovemetType.StartContactLand:
+                    if (targetContactPointIndex == 0 && dataState.csFeatures.rotateToStart ||
+                        targetContactPointIndex <= dataState.csFeatures.middleContactsCount && dataState.csFeatures.rotateToContacts)
+                    {
+                        RotateToSpecificPoint();
+                    }
+                    break;
+            }
+        }
+
+        private void RotateOnContacts()
+        {
+            if (dataState.csFeatures.rotateOnContacts &&
+               //targetContactPointIndex > 0 &&
+                targetContactPointIndex <= dataState.csFeatures.middleContactsCount &&
+                currentClipLocalTime > GetCurrentMMData().GetContactStartTime(targetContactPointIndex) &&
+                currentClipLocalTime <= GetCurrentMMData().GetContactEndTime(targetContactPointIndex)
+                )
+            {
+                Quaternion desiredRotation = Quaternion.LookRotation(
+                    logicLayer.contactPoints[targetContactPointIndex].forward,
+                    Vector3.up);
+
+                float deltaRotationAngle = Quaternion.Angle(Transform.rotation, desiredRotation);
+
+                float speed = deltaRotationAngle / (GetCurrentMMData().GetContactEndTime(targetContactPointIndex) - currentClipLocalTime);
+
+                Transform.rotation = Quaternion.RotateTowards(Transform.rotation, desiredRotation, speed * Time.deltaTime);
+                float3 currentContactPointPosition = Transform.TransformPoint(
+                        this.GetCurrentMMData().GetContactPointInTime(targetContactPointIndex, currentClipLocalTime).position
+                        );
+                Vector3 delta = logicLayer.contactPoints[targetContactPointIndex].frameContact.position - currentContactPointPosition;
+                Transform.position += delta;
             }
         }
 
@@ -471,7 +563,7 @@ namespace DW_Gameplay
                         LerpToPosition(targetContactPointIndex);
                         break;
                     case ContactPointPositionCorrectionType.MovePosition:
-                        MoveToContactPoint(targetContactPointIndex, logicLayer.contactPoints[targetContactPointIndex].position);
+                        MoveToContactPoint(targetContactPointIndex, logicLayer.contactPoints[targetContactPointIndex].frameContact.position);
                         break;
                 }
             }
@@ -519,7 +611,7 @@ namespace DW_Gameplay
                         LerpToPosition(targetContactPointIndex);
                         break;
                     case ContactPointPositionCorrectionType.MovePosition:
-                        MoveToContactPoint(targetContactPointIndex, logicLayer.contactPoints[targetContactPointIndex].position);
+                        MoveToContactPoint(targetContactPointIndex, logicLayer.contactPoints[targetContactPointIndex].frameContact.position);
                         break;
                 }
             }
@@ -568,7 +660,7 @@ namespace DW_Gameplay
                         LerpToPosition(targetContactPointIndex);
                         break;
                     case ContactPointPositionCorrectionType.MovePosition:
-                        MoveToContactPoint(targetContactPointIndex, logicLayer.contactPoints[targetContactPointIndex].position);
+                        MoveToContactPoint(targetContactPointIndex, logicLayer.contactPoints[targetContactPointIndex].frameContact.position);
                         break;
                 }
             }
@@ -614,7 +706,7 @@ namespace DW_Gameplay
                         LerpToPosition(targetContactPointIndex);
                         break;
                     case ContactPointPositionCorrectionType.MovePosition:
-                        MoveToContactPoint(targetContactPointIndex, logicLayer.contactPoints[targetContactPointIndex].position);
+                        MoveToContactPoint(targetContactPointIndex, logicLayer.contactPoints[targetContactPointIndex].frameContact.position);
                         break;
                 }
             }
@@ -659,7 +751,7 @@ namespace DW_Gameplay
                         LerpToPosition(targetContactPointIndex);
                         break;
                     case ContactPointPositionCorrectionType.MovePosition:
-                        MoveToContactPoint(targetContactPointIndex, logicLayer.contactPoints[targetContactPointIndex].position);
+                        MoveToContactPoint(targetContactPointIndex, logicLayer.contactPoints[targetContactPointIndex].frameContact.position);
                         break;
                 }
             }
